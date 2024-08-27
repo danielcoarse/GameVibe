@@ -1,34 +1,33 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getGamesByGenreName, fetchGenresIds } from '@/app/actions';
-import { randomIntFromInterval } from '@/lib/utils';
+import { getCategoryBySlug } from '@/lib/utils';
+import { fetchDataFromUrls } from '@/app/actions';
 import { Gamepad2, BookCopy } from 'lucide-react';
 import { Refresh } from '@/components/Refresh';
 import Loading from '@/app/loadning';
+import { getRandomNumber } from '@/lib/utils';
 
-const GamePage = async () => {
-  const genres = await fetchGenresIds();
-  const genreNumber = randomIntFromInterval(0, genres.length - 1);
-  const games = await getGamesByGenreName(genres[genreNumber].name);
-  const gameNumber = randomIntFromInterval(0, games.length - 1);
-  const randomGame = games[gameNumber];
+const GamePage = async ({ params }) => {
+  const categoryData = getCategoryBySlug(params.slug);
+  const data = await fetchDataFromUrls(categoryData.genres);
+  const gameData = getRandomNumber(data);
 
   return (
     <>
-      {randomGame ? (
+      {gameData ? (
         <>
           <div className='card lg:card-side bg-base-100 shadow-xl mb-10'>
-            <figure>
-              {randomGame.cover?.url ? (
+            <div className='relative'>
+              {gameData.cover?.url ? (
                 <Image
-                  src={`https:${randomGame.cover?.url.replace(
+                  src={`https:${gameData.cover?.url.replace(
                     't_thumb',
-                    't_cover_big'
+                    't_1080p'
                   )}`}
-                  alt={randomGame.name}
+                  alt={gameData.name}
                   width={264}
                   height={374}
-                  priority
+                  className='object-cover object-center'
                 />
               ) : (
                 <Image
@@ -39,9 +38,9 @@ const GamePage = async () => {
                   priority
                 />
               )}
-            </figure>
+            </div>
             <div className='card-body'>
-              <h2 className='card-title mb-8'>{randomGame.name}</h2>
+              <h2 className='card-title mb-8'>{gameData.name}</h2>
               <div>
                 <div className='flex flex-wrap items-center gap-2 mb-4'>
                   <div className='flex items-center gap-1'>
@@ -49,8 +48,8 @@ const GamePage = async () => {
                     Genre:
                   </div>
                   <div className='flex flex-wrap gap-2'>
-                    {randomGame.genres &&
-                      randomGame.genres.map((el) => (
+                    {gameData.genres &&
+                      gameData.genres.map((el) => (
                         <div
                           key={el.name}
                           className='badge badge-secondary badge-outline'
@@ -67,8 +66,8 @@ const GamePage = async () => {
                     Platforms:
                   </div>
                   <div className='flex flex-wrap gap-2'>
-                    {randomGame.platforms &&
-                      randomGame.platforms.map((el) => (
+                    {gameData.platforms &&
+                      gameData.platforms.map((el) => (
                         <div
                           key={el.name}
                           className='badge badge-secondary badge-outline'
@@ -81,7 +80,7 @@ const GamePage = async () => {
               </div>
               <div className='card-actions justify-end mt-auto'>
                 <Link
-                  href={randomGame.url}
+                  href={gameData.url}
                   target='_blank'
                   className='btn btn-primary capitalize'
                 >
@@ -93,17 +92,17 @@ const GamePage = async () => {
 
           <div className='card bg-base-100 shadow-xl mb-8'>
             <div className='card-body'>
-              {randomGame.summary && (
+              {gameData.summary && (
                 <div className='prose'>
                   <h3>Description</h3>
-                  <p>{randomGame.summary || 'No description'}</p>
+                  <p>{gameData.summary || 'No description'}</p>
                 </div>
               )}
 
-              {randomGame.storyline && (
+              {gameData.storyline && (
                 <div className='prose'>
                   <h3>Storyline</h3>
-                  <p>{randomGame.storyline}</p>
+                  <p>{gameData.storyline}</p>
                 </div>
               )}
             </div>

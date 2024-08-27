@@ -1,9 +1,11 @@
 'use server';
 
+import { getRandomNumber } from '@/lib/utils';
+
 // Function to fetch a new Access Token
 async function fetchToken() {
   const res = await fetch(
-    `${process.env.IGDB_URL}token?client_id=${process.env.IGDB_CLIENT_ID}&client_secret=${process.env.IGDB_CLIENT_SECRET}&grant_type=client_credentials`,
+    `${process.env.TWITCH_AUTH_URL}token?client_id=${process.env.IGDB_CLIENT_ID}&client_secret=${process.env.IGDB_CLIENT_SECRET}&grant_type=client_credentials`,
     {
       method: 'POST',
     }
@@ -31,59 +33,10 @@ export async function getAccessToken() {
   return accessToken;
 }
 
-// Function to fetch genre ID by genre name
-export async function fetchGenreID(genreName, access_token) {
-  const genreResponse = await fetch('https://api.igdb.com/v4/genres', {
-    method: 'POST',
-    headers: {
-      'Client-ID': process.env.IGDB_CLIENT_ID,
-      Authorization: `Bearer ${access_token}`,
-      Accept: 'application/json',
-    },
-    body: `fields id,name; where name = "${genreName}";`,
-  });
-  const genres = await genreResponse.json();
-
-  if (genres.length > 0) {
-    return genres[0].id;
-  } else {
-    throw new Error('Genre not found');
-  }
-}
-
-// Function to fetch games by genre ID
-export async function fetchGamesByGenre(genreID, access_token) {
-  const gamesResponse = await fetch('https://api.igdb.com/v4/games', {
-    method: 'POST',
-    headers: {
-      'Client-ID': process.env.IGDB_CLIENT_ID,
-      Authorization: `Bearer ${access_token}`,
-      Accept: 'application/json',
-    },
-    body: `fields name,url,genres.name,genres.slug,platforms.name,platforms.platform_logo.url,cover.url,cover.width,cover.height,cover.checksum,artworks.url,screenshots.url,summary,storyline; where genres = [${genreID}];`,
-  });
-
-  const games = await gamesResponse.json();
-  return games;
-}
-
-// Main function to get games by genre name
-export async function getGamesByGenreName(genreName) {
-  try {
-    const accessData = await getAccessToken();
-    const genreID = await fetchGenreID(genreName, accessData);
-    const games = await fetchGamesByGenre(genreID, accessData);
-    return games;
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Function to fetch genres ids
 export async function fetchGenresIds() {
   try {
     const accessData = await getAccessToken();
-    const res = await fetch('https://api.igdb.com/v4/genres', {
+    const res = await fetch(`${process.env.IGDB_URL}genres`, {
       method: 'POST',
       headers: {
         'Client-ID': process.env.IGDB_CLIENT_ID,
@@ -94,8 +47,55 @@ export async function fetchGenresIds() {
     });
 
     const ids = await res.json();
-    return ids;
+
+    const data = ids.map((el) => el.id);
+
+    return data;
   } catch (error) {
     console.error(error);
+  }
+}
+
+export async function fetchGameByGenreID(genreID) {
+  try {
+    const accessData = await getAccessToken();
+
+    const gamesResponse = await fetch(`${process.env.IGDB_URL}games`, {
+      method: 'POST',
+      headers: {
+        'Client-ID': process.env.IGDB_CLIENT_ID,
+        Authorization: `Bearer ${accessData}`,
+        Accept: 'application/json',
+      },
+      body: `fields name,url,genres.name,genres.slug,platforms.name,platforms.platform_logo.url,cover.url,cover.width,cover.height,cover.checksum,artworks.url,screenshots.url,summary,storyline; where genres = [${genreID}];`,
+    });
+
+    const games = await gamesResponse.json();
+    const data = getRandomNumber(games);
+
+    return data;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function fetchDataFromUrls(genres) {
+  try {
+    const fetchPromises = genres.map(async (genre) => {
+      try {
+        const data = await fetchGameByGenreID(genre.id);
+        return data;
+      } catch (error) {
+        console.error('Fetch error for Genre:', genre, error);
+        return null;
+      }
+    });
+
+    const dataArray = await Promise.all(fetchPromises);
+    const validData = dataArray.filter((data) => data !== null);
+
+    return validData;
+  } catch (error) {
+    console.error('Error processing fetch results:', error);
   }
 }

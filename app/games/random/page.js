@@ -1,34 +1,31 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getGamesByGenreName, fetchGenresIds } from '@/app/actions';
-import { randomIntFromInterval } from '@/lib/utils';
+import { fetchGenresIds, fetchGameByGenreID } from '@/app/actions';
+import { getRandomNumber } from '@/lib/utils';
 import { Gamepad2, BookCopy } from 'lucide-react';
 import { Refresh } from '@/components/Refresh';
 import Loading from '@/app/loadning';
 
-const RandomGame = async () => {
-  const genres = await fetchGenresIds();
-  const genreNumber = randomIntFromInterval(0, genres.length - 1);
-  const games = await getGamesByGenreName(genres[genreNumber].name);
-  const gameNumber = randomIntFromInterval(0, games.length - 1);
-  const randomGame = games[gameNumber];
+const RandomGameData = async () => {
+  const ids = await fetchGenresIds();
+  const genreID = getRandomNumber(ids);
+  const randomGameData = await fetchGameByGenreID(genreID);
 
   return (
     <>
-      {randomGame ? (
+      {randomGameData ? (
         <>
           <div className='card lg:card-side bg-base-100 shadow-xl mb-10'>
             <figure>
-              {randomGame.cover?.url ? (
+              {randomGameData.cover?.url ? (
                 <Image
-                  src={`https:${randomGame.cover?.url.replace(
+                  src={`https:${randomGameData.cover?.url.replace(
                     't_thumb',
-                    't_cover_big'
+                    't_1080p'
                   )}`}
-                  alt={randomGame.name}
+                  alt={randomGameData.name}
                   width={264}
                   height={374}
-                  priority
                 />
               ) : (
                 <Image
@@ -36,12 +33,11 @@ const RandomGame = async () => {
                   alt='no game image'
                   width={264}
                   height={374}
-                  priority
                 />
               )}
             </figure>
             <div className='card-body'>
-              <h2 className='card-title mb-8'>{randomGame.name}</h2>
+              <h2 className='card-title mb-8'>{randomGameData.name}</h2>
               <div>
                 <div className='flex flex-wrap items-center gap-2 mb-4'>
                   <div className='flex items-center gap-1'>
@@ -49,8 +45,8 @@ const RandomGame = async () => {
                     Genre:
                   </div>
                   <div className='flex flex-wrap gap-2'>
-                    {randomGame.genres &&
-                      randomGame.genres.map((el) => (
+                    {randomGameData.genres &&
+                      randomGameData.genres.map((el) => (
                         <div
                           key={el.name}
                           className='badge badge-secondary badge-outline'
@@ -67,8 +63,8 @@ const RandomGame = async () => {
                     Platforms:
                   </div>
                   <div className='flex flex-wrap gap-2'>
-                    {randomGame.platforms &&
-                      randomGame.platforms.map((el) => (
+                    {randomGameData.platforms &&
+                      randomGameData.platforms.map((el) => (
                         <div
                           key={el.name}
                           className='badge badge-secondary badge-outline'
@@ -81,7 +77,7 @@ const RandomGame = async () => {
               </div>
               <div className='card-actions justify-end mt-auto'>
                 <Link
-                  href={randomGame.url}
+                  href={randomGameData.url || ''}
                   target='_blank'
                   className='btn btn-primary capitalize'
                 >
@@ -93,17 +89,17 @@ const RandomGame = async () => {
 
           <div className='card bg-base-100 shadow-xl mb-8'>
             <div className='card-body'>
-              {randomGame.summary && (
+              {randomGameData.summary && (
                 <div className='prose'>
                   <h3>Description</h3>
-                  <p>{randomGame.summary || 'No description'}</p>
+                  <p>{randomGameData.summary || 'No description'}</p>
                 </div>
               )}
 
-              {randomGame.storyline && (
+              {randomGameData.storyline && (
                 <div className='prose'>
                   <h3>Storyline</h3>
-                  <p>{randomGame.storyline}</p>
+                  <p>{randomGameData.storyline}</p>
                 </div>
               )}
             </div>
@@ -120,4 +116,4 @@ const RandomGame = async () => {
   );
 };
 
-export default RandomGame;
+export default RandomGameData;
